@@ -2,7 +2,7 @@
 
 A food donation app built for the KSU AI Club Hackathon 2026 (AI Club track).
 
-Second Helping connects campus dining leftovers with students who need a meal. Dining staff post surplus food, students claim it, and AI helps match portions, flag pickup windows and cut waste.
+Second Helping lets KSU dining halls donate surplus food instead of throwing it out. Dining staff snap a photo of the leftovers, AI reads the photo and description into a pickup listing, student organizations claim and deliver it to food partners, and they earn service hours for it. The app also writes short impact updates for Dining Services and Student Life.
 
 ## Run it
 
