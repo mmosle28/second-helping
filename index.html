@@ -1,0 +1,749 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Second Helping</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,600;12..96,800&family=Figtree:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+/* Layout idea: a phone-sized app shell (header, scrolling screen, bottom tab bar), centered on wide screens; each role gets its own tabs and step-by-step flows. */
+:root {
+  --bg: #ecebe6;
+  --app: #f8f7f3;
+  --surface: #ffffff;
+  --ink: #1d1c19;
+  --muted: #6b675e;
+  --line: #e2dfd6;
+  --gold: #e8a800;
+  --gold-ink: #6e4f00;
+  --gold-soft: #fff4d1;
+  --green: #1f7a4d;
+  --green-soft: #e3f3ea;
+  --red: #b3261e;
+  --red-soft: #fbe6e4;
+  --blue: #2457a6;
+  --blue-soft: #e5edf9;
+  --font-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --font-body: "Figtree", "Segoe UI", system-ui, sans-serif;
+  color-scheme: light;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0e0e0c; --app: #161614; --surface: #201f1b; --ink: #f1efe8; --muted: #a8a397; --line: #34322c;
+    --gold: #f2b91c; --gold-ink: #ffd968; --gold-soft: #3a2f0e;
+    --green: #5cc58f; --green-soft: #173126; --red: #f08a80; --red-soft: #3c1d1a;
+    --blue: #8db4f2; --blue-soft: #1a2740; color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0e0e0c; --app: #161614; --surface: #201f1b; --ink: #f1efe8; --muted: #a8a397; --line: #34322c;
+  --gold: #f2b91c; --gold-ink: #ffd968; --gold-soft: #3a2f0e;
+  --green: #5cc58f; --green-soft: #173126; --red: #f08a80; --red-soft: #3c1d1a;
+  --blue: #8db4f2; --blue-soft: #1a2740; color-scheme: dark;
+}
+* { box-sizing: border-box; }
+html, body { margin: 0; height: 100%; background: var(--bg); color: var(--ink); font-family: var(--font-body); font-size: 15px; line-height: 1.45; }
+h1, h2, h3 { font-family: var(--font-display); margin: 0; text-wrap: balance; line-height: 1.15; }
+p { margin: 0; }
+button, input, select, textarea { font: inherit; color: inherit; }
+button:focus-visible, input:focus-visible, select:focus-visible, textarea:focus-visible, a:focus-visible { outline: 2px solid var(--gold); outline-offset: 2px; }
+
+.shell { height: 100%; display: flex; justify-content: center; }
+.app { width: 100%; max-width: 440px; height: 100%; background: var(--app); display: flex; flex-direction: column; position: relative; overflow: hidden; }
+@media (min-width: 600px) {
+  .shell { padding: 20px 0; }
+  .app { border-radius: 28px; border: 1px solid var(--line); box-shadow: 0 20px 60px rgba(0,0,0,0.12); max-height: 880px; }
+}
+.appbar { display: flex; align-items: center; gap: 10px; padding: 14px 16px 10px; background: var(--app); }
+.appbar h1 { font-size: 22px; font-weight: 800; flex: 1; }
+.iconbtn { border: 1px solid var(--line); background: var(--surface); border-radius: 999px; height: 34px; min-width: 34px; padding: 0 12px; font-weight: 600; font-size: 13px; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
+.screen { flex: 1; overflow-y: auto; padding: 4px 16px 20px; display: flex; flex-direction: column; gap: 14px; }
+.tabbar { display: grid; grid-template-columns: repeat(3, 1fr); border-top: 1px solid var(--line); background: var(--surface); padding: 6px 6px 10px; }
+.tab { border: none; background: none; display: flex; flex-direction: column; align-items: center; gap: 2px; padding: 6px 0; font-size: 12px; font-weight: 600; color: var(--muted); cursor: pointer; position: relative; }
+.tab svg { width: 22px; height: 22px; }
+.tab[aria-current="page"] { color: var(--ink); }
+.tab[aria-current="page"] svg { color: var(--gold); }
+.badge { position: absolute; top: 2px; left: calc(50% + 6px); background: var(--red); color: #fff; font-size: 10px; font-weight: 700; border-radius: 99px; padding: 0 5px; min-width: 16px; text-align: center; }
+
+.card { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 16px; display: flex; flex-direction: column; gap: 12px; }
+.card h2 { font-size: 17px; font-weight: 800; }
+.muted { color: var(--muted); font-size: 13px; }
+.stack { display: flex; flex-direction: column; gap: 10px; }
+.row { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; }
+.between { justify-content: space-between; }
+label.field { display: flex; flex-direction: column; gap: 4px; font-size: 13px; font-weight: 600; color: var(--muted); flex: 1 1 120px; }
+input[type="text"], input[type="number"], select, textarea { background: var(--app); border: 1px solid var(--line); border-radius: 10px; padding: 10px 12px; width: 100%; font-weight: 500; color: var(--ink); }
+textarea { resize: vertical; min-height: 76px; }
+.btn { border: 1px solid var(--line); background: var(--surface); border-radius: 12px; padding: 11px 16px; font-weight: 700; cursor: pointer; text-align: center; }
+.btn.block { width: 100%; }
+.btn.primary { background: var(--gold); border-color: var(--gold); color: #1d1c19; }
+.btn.dark { background: var(--ink); border-color: var(--ink); color: var(--app); }
+.btn.ghost { background: transparent; }
+.btn.small { padding: 6px 11px; font-size: 13px; border-radius: 9px; }
+.btn:disabled { opacity: 0.5; cursor: not-allowed; }
+
+/* Welcome */
+.welcome { flex: 1; display: flex; flex-direction: column; justify-content: space-between; padding: 40px 22px 26px; gap: 24px; overflow-y: auto; }
+.logo { width: 56px; height: 56px; border-radius: 16px; background: var(--gold); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 24px; color: #1d1c19; }
+.welcome h1 { font-size: 34px; font-weight: 800; margin-top: 18px; }
+.welcome .lead { color: var(--muted); font-size: 16px; margin-top: 8px; max-width: 32ch; }
+.howto { display: flex; flex-direction: column; gap: 10px; margin-top: 22px; }
+.howto div { display: flex; gap: 10px; align-items: flex-start; font-size: 14px; }
+.howto b.n { flex: none; width: 24px; height: 24px; border-radius: 99px; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-size: 12px; }
+.rolebtn { display: flex; gap: 12px; align-items: center; text-align: left; width: 100%; border: 1px solid var(--line); background: var(--surface); border-radius: 16px; padding: 14px; cursor: pointer; }
+.rolebtn:hover { border-color: var(--gold); }
+.rolebtn .ic { width: 42px; height: 42px; border-radius: 12px; display: grid; place-items: center; flex: none; }
+.rolebtn strong { display: block; font-size: 16px; }
+.rolebtn span { color: var(--muted); font-size: 13px; }
+
+/* Steps */
+.stepper { display: flex; gap: 6px; }
+.stepper i { flex: 1; height: 4px; border-radius: 99px; background: var(--line); }
+.stepper i.on { background: var(--gold); }
+.drop { border: 2px dashed var(--line); border-radius: 14px; min-height: 170px; display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 6px; cursor: pointer; background: var(--app); text-align: center; padding: 12px; overflow: hidden; }
+.drop:hover { border-color: var(--gold); }
+.drop img { max-width: 100%; max-height: 220px; border-radius: 10px; }
+.drop .plus { width: 48px; height: 48px; border-radius: 99px; background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-size: 26px; font-weight: 800; }
+.or { text-align: center; color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: 0.08em; }
+.ai-note { background: var(--gold-soft); color: var(--gold-ink); border-radius: 12px; padding: 10px 12px; font-size: 14px; }
+.item-row { display: grid; grid-template-columns: minmax(0, 1fr) 64px 28px; gap: 6px; align-items: center; }
+.item-row .all { grid-column: 1 / 3; }
+.item { border: 1px solid var(--line); border-radius: 12px; padding: 8px; display: grid; gap: 6px; }
+.x { border: none; background: none; color: var(--muted); cursor: pointer; font-size: 20px; }
+.big-code { font-family: ui-monospace, Menlo, monospace; font-size: 44px; letter-spacing: 0.25em; font-weight: 700; text-align: center; padding: 10px; background: var(--app); border-radius: 14px; border: 1px dashed var(--line); }
+.success { text-align: center; display: flex; flex-direction: column; gap: 10px; align-items: center; padding: 10px 0; }
+.check { width: 64px; height: 64px; border-radius: 99px; background: var(--green-soft); color: var(--green); display: grid; place-items: center; }
+.check svg { width: 32px; height: 32px; }
+
+/* Listings */
+.pill { display: inline-flex; align-items: center; border-radius: 999px; padding: 2px 9px; font-size: 12px; font-weight: 700; white-space: nowrap; }
+.pill.open { background: var(--gold-soft); color: var(--gold-ink); }
+.pill.claimed, .pill.picked { background: var(--blue-soft); color: var(--blue); }
+.pill.delivered { background: var(--green-soft); color: var(--green); }
+.pill.expired { background: var(--red-soft); color: var(--red); }
+.pill.allergen { background: var(--app); color: var(--muted); border: 1px solid var(--line); font-weight: 600; }
+.lcard { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; display: flex; gap: 12px; text-align: left; width: 100%; cursor: pointer; align-items: flex-start; }
+.lcard:hover { border-color: var(--muted); }
+.lcard img, .lcard .thumb { width: 58px; height: 58px; border-radius: 12px; object-fit: cover; flex: none; }
+.lcard .thumb { background: var(--gold-soft); color: var(--gold-ink); display: grid; place-items: center; font-family: var(--font-display); font-weight: 800; font-size: 18px; }
+.lcard .grow { flex: 1; min-width: 0; display: flex; flex-direction: column; gap: 3px; }
+.lcard h3 { font-family: var(--font-body); font-size: 15px; font-weight: 700; }
+.lcard .sub { color: var(--muted); font-size: 13px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.clock { font-variant-numeric: tabular-nums; font-weight: 700; font-size: 13px; }
+.clock.urgent { color: var(--red); }
+.section-title { font-size: 13px; font-weight: 700; color: var(--muted); text-transform: uppercase; letter-spacing: 0.06em; margin-top: 4px; }
+.empty { color: var(--muted); text-align: center; padding: 28px 12px; border: 1px dashed var(--line); border-radius: 16px; font-size: 14px; }
+
+/* Detail + timeline */
+.hero-img { width: 100%; max-height: 200px; object-fit: cover; border-radius: 16px; }
+.facts { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.fact { background: var(--surface); border: 1px solid var(--line); border-radius: 12px; padding: 10px; }
+.fact b { display: block; font-family: var(--font-display); font-size: 20px; font-variant-numeric: tabular-nums; }
+.fact span { color: var(--muted); font-size: 12px; }
+.timeline { display: flex; flex-direction: column; gap: 0; }
+.tl { display: grid; grid-template-columns: 26px 1fr; gap: 10px; position: relative; padding-bottom: 14px; }
+.tl:last-child { padding-bottom: 0; }
+.tl::before { content: ""; position: absolute; left: 12px; top: 26px; bottom: 0; width: 2px; background: var(--line); }
+.tl:last-child::before { display: none; }
+.tl.done::before { background: var(--green); }
+.dot { width: 26px; height: 26px; border-radius: 99px; border: 2px solid var(--line); background: var(--surface); display: grid; place-items: center; font-size: 12px; font-weight: 700; color: var(--muted); }
+.tl.done .dot { background: var(--green); border-color: var(--green); color: #fff; }
+.tl.now .dot { border-color: var(--gold); color: var(--gold-ink); background: var(--gold-soft); }
+.tl strong { display: block; font-size: 14px; }
+.tl .muted { margin-top: 1px; }
+.tl .act { margin-top: 8px; display: flex; flex-direction: column; gap: 8px; }
+.partner-box { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 12px 14px; font-size: 14px; }
+.tag-ex { font-size: 11px; color: var(--muted); font-weight: 600; }
+.celebrate { background: var(--green-soft); color: var(--green); border-radius: 16px; padding: 16px; text-align: center; }
+.celebrate b { font-family: var(--font-display); font-size: 28px; display: block; }
+
+/* Impact */
+.stats { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 10px; }
+.stat { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 14px; }
+.stat .n { font-family: var(--font-display); font-size: 28px; font-weight: 800; font-variant-numeric: tabular-nums; }
+.stat .l { color: var(--muted); font-size: 13px; }
+.stat.you { background: var(--gold-soft); border-color: var(--gold); grid-column: 1 / -1; }
+.stat.you .l { color: var(--gold-ink); }
+table { width: 100%; border-collapse: collapse; font-size: 14px; }
+th, td { text-align: left; padding: 7px 4px; border-bottom: 1px solid var(--line); }
+th { color: var(--muted); font-weight: 600; font-size: 12px; }
+td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+tr.me td { font-weight: 700; }
+.bar { height: 8px; border-radius: 99px; background: var(--app); overflow: hidden; margin-top: 4px; }
+.bar > i { display: block; height: 100%; background: var(--gold); }
+.report { white-space: pre-wrap; background: var(--app); border-radius: 12px; padding: 12px; font-size: 14px; }
+.status-msg { font-size: 13px; color: var(--muted); }
+.status-msg.err { color: var(--red); }
+.status-msg:empty { display: none; }
+.spin { display: inline-block; width: 12px; height: 12px; border: 2px solid currentColor; border-right-color: transparent; border-radius: 50%; animation: s 0.8s linear infinite; vertical-align: -1px; margin-right: 6px; }
+@keyframes s { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .spin { animation: none; } }
+.toast { position: absolute; left: 16px; right: 16px; bottom: 84px; background: var(--ink); color: var(--app); border-radius: 12px; padding: 10px 14px; font-size: 14px; font-weight: 600; z-index: 5; }
+.banner { background: var(--blue-soft); color: var(--blue); border-radius: 12px; padding: 8px 12px; font-size: 13px; }
+.hidden { display: none !important; }
+</style>
+</head>
+<body>
+<div class="shell"><div class="app" id="app"></div></div>
+<input id="photoInput" type="file" accept="image/*" class="hidden" aria-label="Photo of surplus food">
+
+<script>
+/* ===== Config: partner sites (examples for the demo) ===== */
+const PARTNERS = [
+  { id: "p1", name: "Cobb Community Kitchen", takesHot: true, capacity: 150, tripMin: 12, notes: "Serves dinner at 6 PM, takes hot prepared meals" },
+  { id: "p2", name: "Kennesaw Family Shelter", takesHot: true, capacity: 60, tripMin: 8, notes: "Houses families with kids, prefers nut-free food" },
+  { id: "p3", name: "Campus Food Pantry", takesHot: false, capacity: 200, tripMin: 5, notes: "On campus, packaged food, bread and produce only" },
+  { id: "p4", name: "Marietta Men's Shelter", takesHot: true, capacity: 80, tripMin: 20, notes: "Serves late dinner at 8 PM, takes hot prepared meals" }
+];
+const partnerById = id => PARTNERS.find(p => p.id === id) || null;
+
+/* ===== Icons ===== */
+const I = {
+  plus: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M12 5v14M5 12h14"/></svg>',
+  list: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M8 6h13M8 12h13M8 18h13M3 6h.01M3 12h.01M3 18h.01"/></svg>',
+  chart: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round"><path d="M4 20V10M10 20V4M16 20v-7M22 20H2"/></svg>',
+  bag: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M5 8h14l-1 12H6L5 8z"/><path d="M9 8V6a3 3 0 0 1 6 0v2"/></svg>',
+  route: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="6" cy="19" r="2"/><circle cx="18" cy="5" r="2"/><path d="M8 19h7a3 3 0 0 0 0-6H9a3 3 0 0 1 0-6h7"/></svg>',
+  back: '<svg viewBox="0 0 24 24" width="18" height="18" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round"><path d="M15 18l-6-6 6-6"/></svg>',
+  check: '<svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3" stroke-linecap="round" stroke-linejoin="round"><path d="M5 12l5 5L20 7"/></svg>',
+  chef: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6 13.9V20h12v-6.1A4 4 0 0 0 16 6a4 4 0 0 0-8 0 4 4 0 0 0-2 7.9z"/><path d="M6 17h12"/></svg>',
+  people: '<svg viewBox="0 0 24 24" width="22" height="22" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="9" cy="8" r="3"/><path d="M3 20a6 6 0 0 1 12 0"/><circle cx="17" cy="9" r="2.5"/><path d="M16 14.5a5 5 0 0 1 5 5.5"/></svg>'
+};
+
+/* ===== State ===== */
+let listings = [], orgs = [];
+let db = null, sample = null, canImages = false, demoMode = false;
+const S = {
+  role: localGet("sh-role"),           // "staff" | "org" | null
+  org: localGet("sh-org") || "",
+  tab: null,
+  detail: null,                        // listing id open in detail view
+  step: 1,                             // staff post flow step
+  draft: freshDraft(),
+  posted: null,                        // id of listing just posted
+  celebrate: null,                     // { id, hours, vols }
+  pickingOrg: false,
+  analyzing: false, aiErr: "",
+  report: "", reportBusy: false
+};
+function freshDraft() { return { text: "", photoBlob: null, thumb: null, items: [], lbs: 10, safeHours: 3, partnerId: "p1", partnerReason: "", handling: "", summary: "", location: "The Commons (Kennesaw)" }; }
+
+const $ = id => document.getElementById(id);
+const esc = s => String(s ?? "").replace(/[&<>"']/g, c => ({ "&": "&amp;", "<": "&lt;", ">": "&gt;", '"': "&quot;", "'": "&#39;" }[c]));
+const now = () => Date.now();
+function localGet(k) { try { return localStorage.getItem(k); } catch (e) { return null; } }
+function localSet(k, v) { try { if (v == null) localStorage.removeItem(k); else localStorage.setItem(k, v); } catch (e) {} }
+
+/* ===== Domain helpers ===== */
+/* Hours each volunteer earns for one run: drive there and back plus 15 min loading, rounded to the quarter hour. */
+function hoursFor(l) {
+  const p = partnerById(l.partnerId);
+  const mins = (p ? p.tripMin * 2 : 30) + 15;
+  return Math.max(0.5, Math.round((mins / 60) * 4) / 4);
+}
+const portionsOf = l => (l.items || []).reduce((a, i) => a + (Number(i.portions) || 0), 0);
+function statusOf(l) {
+  if (l.status === "open" && new Date(l.safeUntil).getTime() < now()) return "expired";
+  return l.status;
+}
+function timeLeft(l) {
+  const ms = new Date(l.safeUntil).getTime() - now();
+  if (ms <= 0) return { text: "Expired", urgent: true };
+  const h = Math.floor(ms / 3600000), m = Math.floor((ms % 3600000) / 60000);
+  return { text: (h ? h + "h " : "") + m + "m left", urgent: ms < 45 * 60000 };
+}
+const LABEL = { open: "Waiting for pickup", claimed: "Volunteers on the way", picked_up: "Picked up", delivered: "Delivered", expired: "Expired" };
+const PILL = { open: "open", claimed: "claimed", picked_up: "picked", delivered: "delivered", expired: "expired" };
+function allergensOf(l) { return [...new Set((l.items || []).flatMap(i => String(i.allergens || "").split(",").map(s => s.trim().toLowerCase()).filter(Boolean)))]; }
+function ago(iso) {
+  const m = Math.round((now() - new Date(iso).getTime()) / 60000);
+  if (m < 1) return "just now"; if (m < 60) return m + " min ago";
+  const h = Math.round(m / 60); if (h < 24) return h + "h ago";
+  return new Date(iso).toLocaleDateString(undefined, { weekday: "short" });
+}
+
+/* ===== Data layer ===== */
+async function saveListing(l) {
+  if (db) await db.collection("listings").doc(l.id).set(l);
+  else { listings.push(l); render(); }
+}
+async function patchListing(id, patch) {
+  if (db) await db.collection("listings").doc(id).update(patch);
+  else { Object.assign(listings.find(x => x.id === id), patch); render(); }
+}
+async function saveOrg(name) {
+  const id = "o-" + name.toLowerCase().replace(/[^a-z0-9]+/g, "-").replace(/^-|-$/g, "").slice(0, 40);
+  const doc = { id, name, createdAt: new Date().toISOString() };
+  if (db) await db.collection("orgs").doc(id).set(doc);
+  else { orgs.push(doc); }
+}
+
+/* ===== Render ===== */
+function render() {
+  // Keep whatever the person was typing across re-renders.
+  const kept = {};
+  document.querySelectorAll("#app input[id], #app textarea[id], #app select[id]").forEach(el => { kept[el.id] = el.value; });
+  const focusId = document.activeElement && document.activeElement.id;
+
+  const app = $("app");
+  if (!S.role) app.innerHTML = welcome();
+  else if (S.role === "org" && (!S.org || S.pickingOrg)) app.innerHTML = orgPicker();
+  else app.innerHTML = shell();
+
+  Object.entries(kept).forEach(([id, v]) => { const el = $(id); if (el && el.type !== "file" && !el.dataset.fresh) el.value = v; });
+  if (focusId && $(focusId)) $(focusId).focus();
+}
+
+function welcome() {
+  return `<div class="welcome">
+    <div>
+      <div class="logo">SH</div>
+      <h1>Second Helping</h1>
+      <p class="lead">Leftover dining hall food goes to people who need it, and the students who deliver it earn service hours.</p>
+      <div class="howto">
+        <div><b class="n">1</b><span>Dining staff snap a photo of what's left. AI lists it and picks where it should go.</span></div>
+        <div><b class="n">2</b><span>A student org claims the run and picks it up with a code.</span></div>
+        <div><b class="n">3</b><span>They deliver it, and every volunteer's hours are logged automatically.</span></div>
+      </div>
+    </div>
+    <div class="stack">
+      <p class="muted">Who's using the app?</p>
+      <button class="rolebtn" data-act="role" data-role="staff">
+        <span class="ic" style="background:var(--gold-soft);color:var(--gold-ink)">${I.chef}</span>
+        <span><strong>I work in dining</strong><span>Post leftover food for pickup</span></span>
+      </button>
+      <button class="rolebtn" data-act="role" data-role="org">
+        <span class="ic" style="background:var(--blue-soft);color:var(--blue)">${I.people}</span>
+        <span><strong>I'm in a student org</strong><span>Deliver food and earn service hours</span></span>
+      </button>
+    </div>
+  </div>`;
+}
+
+function orgPicker() {
+  return `<div class="appbar"><button class="iconbtn" data-act="logout" aria-label="Back">${I.back}</button><h1>Your organization</h1></div>
+  <div class="screen">
+    <p class="muted">Hours you log go to this org's record.</p>
+    <div class="stack">
+      ${orgs.map(o => `<button class="rolebtn" data-act="pickorg" data-org="${esc(o.name)}"><span class="ic" style="background:var(--blue-soft);color:var(--blue)">${I.people}</span><span><strong>${esc(o.name)}</strong><span>${orgHours(o.name)} service hours so far</span></span></button>`).join("") || `<div class="empty">No orgs yet. Add yours below.</div>`}
+    </div>
+    <div class="card">
+      <label class="field" for="newOrg">Not listed? Add your org
+        <input id="newOrg" type="text" placeholder="e.g. Habitat for Humanity at KSU">
+      </label>
+      <button class="btn dark" data-act="addorg">Add and continue</button>
+    </div>
+  </div>`;
+}
+
+function tabsFor(role) {
+  return role === "staff"
+    ? [{ id: "post", label: "Post food", icon: I.plus }, { id: "posts", label: "My posts", icon: I.list }, { id: "impact", label: "Impact", icon: I.chart }]
+    : [{ id: "pickups", label: "Pickups", icon: I.bag }, { id: "runs", label: "My runs", icon: I.route }, { id: "impact", label: "Impact", icon: I.chart }];
+}
+
+function shell() {
+  const tabs = tabsFor(S.role);
+  if (!tabs.some(t => t.id === S.tab)) S.tab = tabs[0].id;
+  let title = "", body = "", back = false;
+  if (S.detail) { back = true; title = S.role === "staff" ? "Post details" : "Pickup"; body = detail(listings.find(l => l.id === S.detail)); }
+  else if (S.tab === "post") { title = "Post food"; body = postFlow(); }
+  else if (S.tab === "posts") { title = "My posts"; body = staffPosts(); }
+  else if (S.tab === "pickups") { title = "Pickups"; body = pickups(); }
+  else if (S.tab === "runs") { title = "My runs"; body = myRuns(); }
+  else { title = "Impact"; body = impact(); }
+  const openCount = listings.filter(l => statusOf(l) === "open").length;
+  const who = S.role === "staff" ? "Dining staff" : esc(S.org);
+  return `<div class="appbar">
+      ${back ? `<button class="iconbtn" data-act="back" aria-label="Back">${I.back}</button>` : ""}
+      <h1>${title}</h1>
+      <button class="iconbtn" data-act="${S.role === "org" ? "switchorg" : "logout"}" title="Switch role">${who}</button>
+    </div>
+    <div class="screen" id="screen">
+      ${demoMode ? `<div class="banner">Example mode: changes stay on this screen.</div>` : ""}
+      ${body}
+    </div>
+    <nav class="tabbar" aria-label="Sections">
+      ${tabs.map(t => `<button class="tab" data-act="tab" data-tab="${t.id}" ${S.tab === t.id && !S.detail ? 'aria-current="page"' : ""}>${t.icon}<span>${t.label}</span>${t.id === "pickups" && openCount ? `<span class="badge">${openCount}</span>` : ""}</button>`).join("")}
+    </nav>
+    <div id="toast" class="toast hidden"></div>`;
+}
+
+/* ----- Staff: post flow (3 steps) ----- */
+function postFlow() {
+  const d = S.draft;
+  const stepper = `<div class="stepper" aria-label="Step ${S.step} of 3"><i class="on"></i><i class="${S.step >= 2 ? "on" : ""}"></i><i class="${S.step >= 3 ? "on" : ""}"></i></div>`;
+  if (S.step === 1) return `${stepper}
+    <div class="stack"><h2 style="font-size:20px">What's left over?</h2><p class="muted">Snap the pans or describe them. AI does the rest.</p></div>
+    <label class="drop" for="photoInput">
+      ${d.thumb ? `<img src="${d.thumb}" alt="Your photo of the leftovers"><span class="muted">Tap to change photo</span>` : `<div class="plus">+</div><strong>Add a photo</strong><span class="muted">Hotel pans, trays, anything left from service</span>`}
+    </label>
+    <div class="or">or describe it</div>
+    <textarea id="describe" placeholder="e.g. 2 pans of baked ziti, half pan of roasted broccoli, about 40 dinner rolls">${esc(d.text)}</textarea>
+    ${S.aiErr ? `<p class="status-msg err">${esc(S.aiErr)}</p>` : ""}
+    <button class="btn primary block" data-act="analyze" ${S.analyzing ? "disabled" : ""}>${S.analyzing ? '<span class="spin"></span>AI is reading the food…' : "Continue"}</button>
+    <button class="btn ghost block" data-act="manual">Enter items myself</button>`;
+
+  if (S.step === 2) return `${stepper}
+    <div class="stack"><h2 style="font-size:20px">Check what AI found</h2><p class="muted">Fix anything that's off, then post.</p></div>
+    ${d.summary ? `<div class="ai-note"><b>AI read:</b> ${esc(d.summary)}</div>` : ""}
+    <div class="stack" id="items">
+      ${d.items.map((it, i) => `<div class="item">
+        <div class="item-row">
+          <input type="text" id="in-${i}" data-fresh="1" value="${esc(it.name)}" aria-label="Item name" placeholder="Item">
+          <input type="number" id="ip-${i}" data-fresh="1" value="${esc(it.portions)}" min="0" aria-label="Portions" placeholder="#">
+          <button class="x" data-act="rmitem" data-i="${i}" aria-label="Remove item">×</button>
+          <input class="all" type="text" id="ia-${i}" data-fresh="1" value="${esc(it.allergens)}" aria-label="Allergens" placeholder="Allergens (none)">
+        </div></div>`).join("")}
+      <button class="btn small" data-act="additem" style="align-self:flex-start">Add item</button>
+    </div>
+    <div class="row">
+      <label class="field" for="safe">Safe for (hrs)<input id="safe" type="number" min="0.5" max="24" step="0.5" value="${d.safeHours}" data-fresh="1"></label>
+      <label class="field" for="lbs">Weight (lbs)<input id="lbs" type="number" min="0" value="${d.lbs}" data-fresh="1"></label>
+    </div>
+    <label class="field" for="loc">Dining hall
+      <select id="loc" data-fresh="1">${["The Commons (Kennesaw)", "Stingers (Marietta)"].map(x => `<option ${x === d.location ? "selected" : ""}>${x}</option>`).join("")}</select>
+    </label>
+    <label class="field" for="partner">Deliver to
+      <select id="partner" data-fresh="1">${PARTNERS.map(p => `<option value="${p.id}" ${p.id === d.partnerId ? "selected" : ""}>${esc(p.name)} (example) · ${p.tripMin} min</option>`).join("")}</select>
+    </label>
+    ${d.partnerReason ? `<div class="partner-box"><b>Why AI picked this:</b> ${esc(d.partnerReason)}</div>` : ""}
+    <label class="field" for="handling">Note for volunteers
+      <input id="handling" type="text" value="${esc(d.handling)}" placeholder="Keep hot items covered and above 140°F" data-fresh="1">
+    </label>
+    <button class="btn dark block" data-act="post">Post for pickup</button>
+    <button class="btn ghost block" data-act="restart">Start over</button>`;
+
+  const l = listings.find(x => x.id === S.posted);
+  return `${stepper}
+    <div class="success">
+      <div class="check">${I.check}</div>
+      <h2 style="font-size:22px">Posted</h2>
+      <p class="muted">Student orgs can see it now. Give this code to the volunteers when they arrive.</p>
+    </div>
+    <div class="big-code">${esc(l ? l.code : "")}</div>
+    ${l ? `<p class="muted" style="text-align:center">${portionsOf(l)} portions to ${esc((partnerById(l.partnerId) || {}).name || "partner")}</p>` : ""}
+    <button class="btn primary block" data-act="viewposted">Track this post</button>
+    <button class="btn ghost block" data-act="restart">Post more food</button>`;
+}
+
+function listingCard(l) {
+  const st = statusOf(l);
+  const tl = timeLeft(l);
+  const p = partnerById(l.partnerId);
+  const live = st === "open" || st === "claimed" || st === "picked_up";
+  return `<button class="lcard" data-act="open" data-id="${esc(l.id)}">
+    ${l.thumb ? `<img src="${esc(l.thumb)}" alt="">` : `<span class="thumb">${portionsOf(l)}</span>`}
+    <span class="grow">
+      <span class="row between"><h3>${portionsOf(l)} portions</h3><span class="pill ${PILL[st]}">${LABEL[st]}</span></span>
+      <span class="sub">${(l.items || []).map(i => esc(i.name)).join(", ")}</span>
+      <span class="row" style="gap:10px">
+        ${live ? `<span class="clock ${tl.urgent ? "urgent" : ""}">${tl.text}</span>` : `<span class="muted">${ago(l.deliveredAt || l.createdAt)}</span>`}
+        <span class="muted">${esc(l.location.split(" (")[0])} → ${esc(p ? p.name : "")}</span>
+      </span>
+    </span>
+  </button>`;
+}
+const byNewest = arr => [...arr].sort((a, b) => String(b.createdAt).localeCompare(String(a.createdAt)));
+
+function staffPosts() {
+  const all = byNewest(listings);
+  const active = all.filter(l => ["open", "claimed", "picked_up"].includes(statusOf(l)));
+  const past = all.filter(l => !["open", "claimed", "picked_up"].includes(statusOf(l))).slice(0, 15);
+  return `${active.length ? `<p class="section-title">Active</p>${active.map(listingCard).join("")}` : `<div class="empty">Nothing waiting for pickup. Use Post food after service.</div>`}
+    ${past.length ? `<p class="section-title">Earlier</p>${past.map(listingCard).join("")}` : ""}`;
+}
+
+function pickups() {
+  const open = byNewest(listings.filter(l => statusOf(l) === "open"));
+  const mineActive = listings.filter(l => l.org === S.org && ["claimed", "picked_up"].includes(l.status));
+  return `${mineActive.length ? `<button class="lcard" data-act="tab" data-tab="runs" style="background:var(--blue-soft);border-color:var(--blue)"><span class="grow"><h3>You have ${mineActive.length} run${mineActive.length > 1 ? "s" : ""} in progress</h3><span class="sub">Tap to continue</span></span></button>` : ""}
+    <p class="muted">Food waiting right now. Claim a run and everyone who goes earns service hours.</p>
+    ${open.length ? open.map(listingCard).join("") : `<div class="empty">No food waiting right now. You'll see it here the moment dining staff post.</div>`}`;
+}
+
+function myRuns() {
+  const mine = byNewest(listings.filter(l => l.org === S.org));
+  const active = mine.filter(l => ["claimed", "picked_up"].includes(l.status));
+  const done = mine.filter(l => l.status === "delivered");
+  return `${active.length ? `<p class="section-title">In progress</p>${active.map(listingCard).join("")}` : `<div class="empty">No runs in progress. Find one in Pickups.</div>`}
+    ${done.length ? `<p class="section-title">Completed</p>${done.map(listingCard).join("")}` : ""}`;
+}
+
+/* ----- Detail with timeline ----- */
+function detail(l) {
+  if (!l) return `<div class="empty">This post is no longer available.</div>`;
+  const st = statusOf(l);
+  const p = partnerById(l.partnerId);
+  const tl = timeLeft(l);
+  const al = allergensOf(l);
+  const mine = S.role === "org" && l.org === S.org;
+  const h = hoursFor(l);
+  const steps = [
+    { key: "open", title: "Posted by dining staff", sub: `${esc(l.location)} · ${ago(l.createdAt)}` },
+    { key: "claimed", title: l.org ? `Claimed by ${esc(l.org)}` : "Claimed by a student org", sub: l.volunteers ? esc(l.volunteers.join(", ")) : "Waiting for an org to claim it" },
+    { key: "picked_up", title: "Picked up from dining", sub: "Volunteer enters the code from staff" },
+    { key: "delivered", title: `Delivered to ${esc(p ? p.name : "partner")}`, sub: `${h} service hours for each volunteer` }
+  ];
+  const order = ["open", "claimed", "picked_up", "delivered"];
+  const at = order.indexOf(l.status);
+
+  let action = "";
+  if (S.role === "org") {
+    if (st === "open") action = `<div class="card"><h2>Claim this run</h2>
+      <p class="muted">Each volunteer earns <b>${h} service hours</b> (about ${p ? p.tripMin * 2 + 15 : 45} minutes total).</p>
+      <label class="field" for="vols">Who's going? (comma separated)<input id="vols" type="text" placeholder="e.g. Jordan, Aaliyah"></label>
+      <p id="claimErr" class="status-msg err"></p>
+      <button class="btn primary block" data-act="claim" data-id="${esc(l.id)}">Claim for ${esc(S.org)}</button></div>`;
+    else if (!mine) action = `<div class="card"><p class="muted">Another org, ${esc(l.org || "")}, has this run.</p></div>`;
+  }
+  const stepAction = key => {
+    if (!mine) return "";
+    if (key === "picked_up" && l.status === "claimed") return `<div class="act"><input id="code" type="text" inputmode="numeric" maxlength="4" placeholder="4-digit code from staff" aria-label="Pickup code"><p id="codeErr" class="status-msg err"></p><button class="btn dark" data-act="pickup" data-id="${esc(l.id)}">Confirm pickup</button></div>`;
+    if (key === "delivered" && l.status === "picked_up") return `<div class="act"><button class="btn primary" data-act="deliver" data-id="${esc(l.id)}">Mark delivered</button></div>`;
+    return "";
+  };
+  const cel = S.celebrate && S.celebrate.id === l.id ? `<div class="celebrate"><b>+${S.celebrate.hours} hours</b>logged for ${esc(S.celebrate.vols.join(", "))}. Thanks for feeding ${portionsOf(l)} people.</div>` : "";
+
+  return `${cel}
+    ${l.thumb ? `<img class="hero-img" src="${esc(l.thumb)}" alt="Photo of the food">` : ""}
+    <div class="row between"><h2 style="font-size:22px">${portionsOf(l)} portions</h2><span class="pill ${PILL[st]}">${LABEL[st]}</span></div>
+    <div class="facts">
+      <div class="fact"><b class="${tl.urgent && st !== "delivered" ? "clock urgent" : ""}">${st === "delivered" ? "Done" : tl.text.replace(" left", "")}</b><span>${st === "delivered" ? "delivered" : "until unsafe"}</span></div>
+      <div class="fact"><b>${Number(l.lbs) || 0}</b><span>lbs</span></div>
+      <div class="fact"><b>${p ? p.tripMin : "?"}</b><span>min drive</span></div>
+    </div>
+    <div class="card">
+      <h2>What's in it</h2>
+      <table><tbody>${(l.items || []).map(i => `<tr><td>${esc(i.name)}</td><td class="num">${Number(i.portions) || 0}</td></tr>`).join("")}</tbody></table>
+      ${al.length ? `<div class="row" style="gap:4px"><span class="muted">Contains:</span>${al.map(a => `<span class="pill allergen">${esc(a)}</span>`).join("")}</div>` : ""}
+      ${l.handling ? `<p class="muted">${esc(l.handling)}</p>` : ""}
+    </div>
+    <div class="partner-box"><b>Going to ${esc(p ? p.name : "")}</b> <span class="tag-ex">example partner</span><br><span class="muted">${esc(p ? p.notes : "")}${l.partnerReason ? ". AI picked it: " + esc(l.partnerReason) : ""}</span></div>
+    ${S.role === "staff" && ["open", "claimed"].includes(st) ? `<div class="card"><h2>Pickup code</h2><p class="muted">Read this to the volunteers when they arrive.</p><div class="big-code">${esc(l.code)}</div></div>` : ""}
+    ${action}
+    <div class="card"><h2>Progress</h2><div class="timeline">
+      ${steps.map((s, i) => { const cls = st === "expired" ? (i === 0 ? "done" : "") : i <= at ? "done" : i === at + 1 ? "now" : ""; return `<div class="tl ${cls}"><div class="dot">${cls === "done" ? "✓" : i + 1}</div><div><strong>${s.title}</strong><div class="muted">${s.sub}</div>${cls === "now" ? stepAction(s.key) : ""}</div></div>`; }).join("")}
+    </div></div>`;
+}
+
+/* ----- Impact ----- */
+function computeImpact() {
+  const done = listings.filter(l => l.status === "delivered");
+  const byOrg = {}, byPartner = {};
+  let hours = 0;
+  done.forEach(l => {
+    const h = hoursFor(l) * (l.volunteers || []).length;
+    hours += h;
+    const o = byOrg[l.org] || (byOrg[l.org] = { runs: 0, hours: 0 });
+    o.runs++; o.hours += h;
+    byPartner[l.partnerId] = (byPartner[l.partnerId] || 0) + portionsOf(l);
+  });
+  return { done, meals: done.reduce((a, l) => a + portionsOf(l), 0), lbs: done.reduce((a, l) => a + (Number(l.lbs) || 0), 0), hours, byOrg, byPartner };
+}
+function orgHours(name) { return (computeImpact().byOrg[name] || { hours: 0 }).hours; }
+
+function impact() {
+  const d = computeImpact();
+  const orgRows = Object.entries(d.byOrg).sort((a, b) => b[1].hours - a[1].hours);
+  const maxP = Math.max(1, ...Object.values(d.byPartner));
+  const you = S.role === "org" ? d.byOrg[S.org] || { runs: 0, hours: 0 } : null;
+  return `<div class="stats">
+      ${you ? `<div class="stat you"><div class="n">${you.hours} hrs</div><div class="l">${esc(S.org)} has logged across ${you.runs} run${you.runs === 1 ? "" : "s"}</div></div>` : ""}
+      <div class="stat"><div class="n">${d.meals}</div><div class="l">meals rescued</div></div>
+      <div class="stat"><div class="n">${d.lbs}</div><div class="l">lbs not thrown out</div></div>
+      <div class="stat"><div class="n">${d.hours}</div><div class="l">service hours</div></div>
+      <div class="stat"><div class="n">${d.done.length}</div><div class="l">deliveries</div></div>
+    </div>
+    <div class="card"><h2>Orgs leaderboard</h2>
+      <table><thead><tr><th>Organization</th><th class="num">Runs</th><th class="num">Hours</th></tr></thead>
+      <tbody>${orgRows.map(([n, o]) => `<tr class="${n === S.org ? "me" : ""}"><td>${esc(n)}</td><td class="num">${o.runs}</td><td class="num">${o.hours}</td></tr>`).join("") || `<tr><td colspan="3" class="muted">No deliveries yet.</td></tr>`}</tbody></table>
+    </div>
+    <div class="card"><h2>Where the food went</h2>
+      ${PARTNERS.map(p => { const v = d.byPartner[p.id] || 0; return `<div><div class="row between"><span>${esc(p.name)} <span class="tag-ex">example</span></span><b style="font-variant-numeric:tabular-nums">${v}</b></div><div class="bar"><i style="width:${(v / maxP) * 100}%"></i></div></div>`; }).join("")}
+    </div>
+    <div class="card"><h2>Report for KSU</h2>
+      <p class="muted">AI writes a short update for Dining Services and Student Life from these numbers.</p>
+      ${S.report ? `<div class="report" id="reportOut">${esc(S.report)}</div>` : `<div class="report hidden" id="reportOut"></div>`}
+      <button class="btn primary block" data-act="report" ${S.reportBusy || !sample ? "disabled" : ""}>${S.reportBusy ? '<span class="spin"></span>Writing…' : S.report ? "Write it again" : "Write the report"}</button>
+    </div>`;
+}
+
+/* ===== Actions ===== */
+function toast(msg) { const t = $("toast"); if (!t) return; t.textContent = msg; t.classList.remove("hidden"); clearTimeout(toast.t); toast.t = setTimeout(() => t.classList.add("hidden"), 2600); }
+function readDraftInputs() {
+  const d = S.draft;
+  if ($("describe")) d.text = $("describe").value;
+  if (S.step === 2) {
+    d.items = d.items.map((_, i) => ({ name: ($("in-" + i) || {}).value || "", portions: Number(($("ip-" + i) || {}).value) || 0, allergens: ($("ia-" + i) || {}).value || "" }));
+    d.safeHours = Number($("safe").value) || 3; d.lbs = Number($("lbs").value) || 0;
+    d.location = $("loc").value; d.partnerId = $("partner").value; d.handling = $("handling").value;
+  }
+}
+
+document.addEventListener("click", async e => {
+  const b = e.target.closest("[data-act]");
+  if (!b) return;
+  const act = b.dataset.act;
+  if (act === "role") { S.role = b.dataset.role; localSet("sh-role", S.role); S.tab = null; S.detail = null; render(); }
+  else if (act === "logout") { S.role = null; S.pickingOrg = false; localSet("sh-role", null); S.detail = null; render(); }
+  else if (act === "switchorg") { S.pickingOrg = true; render(); }
+  else if (act === "pickorg") { S.org = b.dataset.org; S.pickingOrg = false; localSet("sh-org", S.org); S.tab = "pickups"; render(); }
+  else if (act === "addorg") {
+    const name = ($("newOrg").value || "").trim(); if (!name) return;
+    if (!orgs.some(o => o.name.toLowerCase() === name.toLowerCase())) { try { await saveOrg(name); } catch (err) {} }
+    S.org = name; S.pickingOrg = false; localSet("sh-org", name); S.tab = "pickups"; render();
+  }
+  else if (act === "tab") { S.tab = b.dataset.tab; S.detail = null; S.celebrate = null; render(); $("screen") && ($("screen").scrollTop = 0); }
+  else if (act === "open") { S.detail = b.dataset.id; S.celebrate = null; render(); $("screen").scrollTop = 0; }
+  else if (act === "back") { S.detail = null; S.celebrate = null; render(); }
+  else if (act === "manual") { readDraftInputs(); if (!S.draft.items.length) S.draft.items = [{ name: "", portions: "", allergens: "" }]; S.step = 2; render(); }
+  else if (act === "additem") { readDraftInputs(); S.draft.items.push({ name: "", portions: "", allergens: "" }); render(); }
+  else if (act === "rmitem") { readDraftInputs(); S.draft.items.splice(Number(b.dataset.i), 1); render(); }
+  else if (act === "restart") { S.draft = freshDraft(); S.step = 1; S.posted = null; S.aiErr = ""; $("photoInput").value = ""; render(); }
+  else if (act === "analyze") analyze();
+  else if (act === "post") post();
+  else if (act === "viewposted") { S.tab = "posts"; S.detail = S.posted; S.draft = freshDraft(); S.step = 1; render(); }
+  else if (act === "claim") {
+    const vols = ($("vols").value || "").split(",").map(s => s.trim()).filter(Boolean).slice(0, 8);
+    if (!vols.length) { $("claimErr").textContent = "Add at least one volunteer's name."; return; }
+    const l = listings.find(x => x.id === b.dataset.id);
+    if (!l || statusOf(l) !== "open") { $("claimErr").textContent = "Someone just claimed this one."; return; }
+    try { await patchListing(l.id, { status: "claimed", org: S.org, volunteers: vols, claimedAt: new Date().toISOString() }); toast("Claimed. Head to " + l.location.split(" (")[0] + "."); }
+    catch (err) { $("claimErr").textContent = "Couldn't claim it. Try again."; }
+  }
+  else if (act === "pickup") {
+    const l = listings.find(x => x.id === b.dataset.id);
+    if (($("code").value || "").trim() !== String(l.code)) { $("codeErr").textContent = "That code doesn't match. Ask dining staff to read it again."; return; }
+    await patchListing(l.id, { status: "picked_up", pickedAt: new Date().toISOString() });
+    toast("Pickup confirmed. Drive safe.");
+  }
+  else if (act === "deliver") {
+    const l = listings.find(x => x.id === b.dataset.id);
+    await patchListing(l.id, { status: "delivered", deliveredAt: new Date().toISOString() });
+    S.celebrate = { id: l.id, hours: hoursFor(l), vols: l.volunteers || [] };
+    render(); $("screen").scrollTop = 0;
+  }
+  else if (act === "report") writeReport();
+});
+
+/* Keep the post draft in sync while typing, so live updates never wipe it. */
+document.addEventListener("input", () => { if (S.role === "staff" && S.tab === "post" && !S.detail) readDraftInputs(); });
+
+/* Photo: downscale for AI, keep a small thumbnail for the post */
+function loadImage(file) { return new Promise((res, rej) => { const img = new Image(); img.onload = () => res(img); img.onerror = rej; img.src = URL.createObjectURL(file); }); }
+function scaled(img, max) { const s = Math.min(1, max / Math.max(img.width, img.height)); const c = document.createElement("canvas"); c.width = Math.round(img.width * s); c.height = Math.round(img.height * s); c.getContext("2d").drawImage(img, 0, 0, c.width, c.height); return c; }
+$("photoInput").addEventListener("change", async e => {
+  const f = e.target.files[0]; if (!f) return;
+  readDraftInputs();
+  try {
+    const img = await loadImage(f);
+    S.draft.photoBlob = await new Promise(r => scaled(img, 1024).toBlob(r, "image/jpeg", 0.85));
+    S.draft.thumb = scaled(img, 360).toDataURL("image/jpeg", 0.72);
+    S.aiErr = "";
+  } catch (err) { S.aiErr = "That photo couldn't be opened. Try a JPG or PNG."; }
+  render();
+});
+
+async function analyze() {
+  readDraftInputs();
+  const d = S.draft;
+  if (!d.photoBlob && !d.text.trim()) { S.aiErr = "Add a photo or a short description first."; render(); return; }
+  if (!sample) { S.aiErr = "AI isn't available here. Tap Enter items myself."; render(); return; }
+  S.analyzing = true; S.aiErr = ""; render();
+  const usePhoto = d.photoBlob && canImages;
+  const prompt = `You help a university dining hall donate surplus food instead of throwing it out.
+Look at the ${usePhoto ? "photo and " : ""}description of leftover food and return JSON only.
+
+Description from staff: ${JSON.stringify(d.text.trim() || "(none, use the photo)")}
+
+Partner sites that can receive food (choose the best one):
+${PARTNERS.map(p => `- id ${p.id}: ${p.name}; takes hot prepared food: ${p.takesHot}; capacity ${p.capacity} portions; ${p.tripMin} min drive; ${p.notes}`).join("\n")}
+
+Rules: estimate portions as single servings. Allergens per item from: gluten, dairy, egg, nuts, soy, fish, shellfish, sesame (empty string if none likely).
+Hot cooked food held hot is safe about 2 to 4 hours; bread and packaged items 24 hours; cut fruit and salads 4 hours cold.
+Never send hot prepared food to a partner that does not take it; avoid nut items for a nut-free partner; respect capacity.
+
+Return exactly: {"items":[{"name":string,"portions":number,"allergens":string}],"lbs":number,"safeHours":number,"handling":string (one short sentence for student volunteers),"partnerId":string,"partnerReason":string (one short sentence),"summary":string (one short sentence describing what you see)}`;
+  try {
+    const opts = { modelTier: "default" };
+    if (usePhoto) opts.images = [d.photoBlob];
+    const out = await sample.json(prompt, opts);
+    d.items = (out.items || []).map(i => ({ name: i.name, portions: i.portions, allergens: i.allergens || "" }));
+    if (!d.items.length) d.items = [{ name: "", portions: "", allergens: "" }];
+    d.lbs = Math.max(0, Math.round(Number(out.lbs) || 0));
+    d.safeHours = Math.max(0.5, Math.min(24, Number(out.safeHours) || 3));
+    d.partnerId = partnerById(out.partnerId) ? out.partnerId : "p1";
+    d.partnerReason = out.partnerReason || ""; d.handling = out.handling || ""; d.summary = out.summary || "";
+    S.step = 2;
+  } catch (e) {
+    S.aiErr = e && e.code === "not_granted" ? "AI access wasn't allowed. Tap Enter items myself." : e && e.code === "rate_limited" ? "AI is busy. Wait a moment and try again." : "AI couldn't read that. Try again or enter the items yourself.";
+    if (e && e.code === "not_granted") sample = null;
+  }
+  S.analyzing = false; render();
+}
+
+async function post() {
+  readDraftInputs();
+  const d = S.draft;
+  const items = d.items.map(i => ({ name: String(i.name).trim(), portions: Math.max(0, Math.round(Number(i.portions) || 0)), allergens: String(i.allergens).trim() })).filter(i => i.name);
+  if (!items.length) { toast("Add at least one item."); return; }
+  const l = {
+    id: "l" + now().toString(36) + Math.random().toString(36).slice(2, 6),
+    location: d.location, items, lbs: Math.max(0, Math.round(d.lbs)),
+    safeUntil: new Date(now() + Math.max(0.5, d.safeHours) * 3600000).toISOString(),
+    status: "open", partnerId: d.partnerId, partnerReason: d.partnerReason, handling: d.handling.trim(),
+    code: String(Math.floor(1000 + Math.random() * 9000)), createdAt: new Date().toISOString()
+  };
+  if (d.thumb) l.thumb = d.thumb;
+  try { await saveListing(l); S.posted = l.id; S.step = 3; render(); }
+  catch (e) { toast(e && e.code === "quota_exceeded" ? "Storage is full. Clear old posts." : "Couldn't post. Check your connection."); }
+}
+
+async function writeReport() {
+  if (!sample) return;
+  const d = computeImpact();
+  S.reportBusy = true; S.report = ""; render();
+  const out = $("reportOut"); if (out) out.classList.remove("hidden");
+  const prompt = `Write a short impact update (under 120 words, plain text, no headings or bullets) for KSU Dining Services and Student Life about a program where dining hall surplus food is donated through student organizations, who earn service hours delivering it.
+Numbers so far: ${d.meals} meals rescued, ${d.lbs} lbs kept out of the trash, ${d.hours} service hours, ${d.done.length} deliveries.
+Hours by organization: ${JSON.stringify(Object.fromEntries(Object.entries(d.byOrg).map(([k, v]) => [k, v.hours])))}.
+Meals by partner: ${JSON.stringify(Object.fromEntries(Object.entries(d.byPartner).map(([k, v]) => [(partnerById(k) || {}).name || k, v])))}.
+Use only these numbers. End with one concrete suggestion to grow the program.`;
+  try {
+    await sample(prompt, { cache: false, onText: ({ text }) => { S.report = text; const o = $("reportOut"); if (o) { o.textContent = text; o.classList.remove("hidden"); } } });
+  } catch (e) { toast("Couldn't write the report. Try again in a moment."); }
+  S.reportBusy = false; render();
+}
+
+/* ===== Example data when shared storage isn't available ===== */
+function useExample() {
+  demoMode = true;
+  const t = h => new Date(now() + h * 3600000).toISOString();
+  orgs = [{ id: "o-service-club", name: "Service Club" }, { id: "o-pre-health-society", name: "Pre-Health Society" }, { id: "o-robotics-club", name: "Robotics Club" }];
+  listings = [
+    { id: "ex1", location: "The Commons (Kennesaw)", items: [{ name: "Baked ziti", portions: 30, allergens: "gluten, dairy" }, { name: "Roasted broccoli", portions: 20, allergens: "" }], lbs: 26, safeUntil: t(2.5), status: "open", partnerId: "p1", partnerReason: "Largest hot-meal capacity and serves dinner at 6 PM.", handling: "Keep pans covered and hot.", code: "4821", createdAt: t(-0.3) },
+    { id: "ex2", location: "The Commons (Kennesaw)", items: [{ name: "Dinner rolls", portions: 40, allergens: "gluten" }], lbs: 6, safeUntil: t(20), status: "delivered", partnerId: "p3", partnerReason: "Bread fits the pantry.", handling: "Bag and keep dry.", code: "1937", org: "Service Club", volunteers: ["Jordan", "Aaliyah"], createdAt: t(-26), claimedAt: t(-25.5), pickedAt: t(-25.2), deliveredAt: t(-25) }
+  ];
+  render();
+}
+
+/* ===== Boot ===== */
+render();
+setInterval(() => { const a = document.activeElement; if (!a || !["INPUT", "TEXTAREA", "SELECT"].includes(a.tagName)) render(); }, 30000);
+(async () => {
+  const c = window.claude;
+  if (!c || !c.use) { useExample(); return; }
+  const [dbNs, sampleNs] = await Promise.all([c.use("db").catch(() => null), c.use("sample").catch(() => null)]);
+  sample = sampleNs;
+  if (sample && sample.limits) { try { canImages = !!(await sample.limits()).images; } catch (e) {} }
+  if (!dbNs) { useExample(); return; }
+  db = dbNs;
+  db.collection("listings").onSnapshot(snap => { listings = snap.docs.map(d => ({ ...d.data(), id: d.id })); render(); }, () => toast("Live updates stopped. Reload to reconnect."));
+  db.collection("orgs").onSnapshot(snap => { orgs = snap.docs.map(d => ({ ...d.data(), id: d.id })).sort((a, b) => a.name.localeCompare(b.name)); render(); });
+})();
+</script>
+</body>
+</html>
